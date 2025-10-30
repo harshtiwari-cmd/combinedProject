@@ -3,6 +3,8 @@ package com.digi.common.adapter.api.service.impl;
 import com.digi.common.adapter.repository.RbxTLocatorNewRepository;
 import com.digi.common.domain.model.dto.CoordinatesDTO;
 import com.digi.common.domain.model.dto.LocateUsDTO;
+import com.digi.common.domain.repository.LocateUsImagesRepository;
+import com.digi.common.infrastructure.persistance.LocateUsImages;
 import com.digi.common.infrastructure.persistance.RbxTLocatorNewEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,21 +12,29 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.auditing.DateTimeProvider;
 
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class LocateUsServiceImplTest {
 
     @Mock
     private RbxTLocatorNewRepository repository;
+
+    @Mock
+    private LocateUsImagesRepository imagesRepository;
+
+    @Mock
+    private DateTimeProvider dateTimeProvider;
 
     @InjectMocks
     private LocateUsServiceImpl service;
@@ -124,121 +134,229 @@ class LocateUsServiceImplTest {
                 .build();
     }
 
-    @Test
-    void fetchByType_Success() {
-        when(repository.findByLocatorTypeIgnoreCase("ATM")).thenReturn(List.of(atmEntity));
 
-        List<LocateUsDTO> result = service.fetchByType("ATM", "en");
+
+    @Test
+    void fetchAllTypesAsync_Success() throws Exception {
+        when(repository.findAll()).thenReturn(List.of(branchEntity, atmEntity, kioskEntity));
+
+        CompletableFuture<Map<String, List<LocateUsDTO>>> future = service.fetchAllTypesAsync("en");
+        Map<String, List<LocateUsDTO>> result = future.get();
 
         assertNotNull(result);
-        assertEquals(1, result.size());
-        LocateUsDTO dto = result.get(0);
-        assertEquals("ATM", dto.getLocatorType());
-        assertEquals("Doha", dto.getCity());
-        assertEquals("123-456-7890", dto.getContactDetails());
-        assertEquals("Qatar", dto.getCountry());
-        assertEquals(1, dto.getDisablePeople());
-        assertEquals("24/7", dto.getWorkingHours());
-        assertEquals("Cash Withdrawal", dto.getFacility());
-        assertEquals("Standard", dto.getAtmType());
-        assertEquals("Y", dto.getIsActive());
-        assertEquals("OPEN", dto.getStatus());
+        assertEquals(3, result.size());
+        assertTrue(result.containsKey("branches"));
+        assertTrue(result.containsKey("atms"));
+        assertTrue(result.containsKey("kiosks"));
 
-        verify(repository).findByLocatorTypeIgnoreCase("ATM");
+        List<LocateUsDTO> branches = result.get("branches");
+        List<LocateUsDTO> atms = result.get("atms");
+        List<LocateUsDTO> kiosks = result.get("kiosks");
+
+        assertEquals(1, branches.size());
+        assertEquals("BRANCH", branches.get(0).getLocatorType());
+        assertEquals("123 Main St, Doha", branches.get(0).getFullAddress());
+        assertEquals("Doha", branches.get(0).getCity());
+
+
+        assertEquals(1, atms.size());
+        assertEquals("ATM", atms.get(0).getLocatorType());
+        assertEquals("Doha", atms.get(0).getCity());
+
+        assertEquals(1, kiosks.size());
+        assertEquals("KIOSK", kiosks.get(0).getLocatorType());
+        assertEquals("Doha", kiosks.get(0).getCity());
+
+
+        verify(repository).findAll();
     }
 
     @Test
-    void fetchByType_EmptyResult() {
-        when(repository.findByLocatorTypeIgnoreCase("ATM")).thenReturn(Collections.emptyList());
+    void fetchAllTypesAsync_EmptyResult() throws Exception {
+        when(repository.findAll()).thenReturn(Collections.emptyList());
 
-        List<LocateUsDTO> result = service.fetchByType("ATM", "en");
+        CompletableFuture<Map<String, List<LocateUsDTO>>> future = service.fetchAllTypesAsync("en");
+        Map<String, List<LocateUsDTO>> result = future.get();
 
         assertNotNull(result);
-        assertTrue(result.isEmpty());
-        verify(repository).findByLocatorTypeIgnoreCase("ATM");
+        assertEquals(3, result.size());
+        assertTrue(result.containsKey("branches"));
+        assertTrue(result.containsKey("atms"));
+        assertTrue(result.containsKey("kiosks"));
+        assertTrue(result.get("branches").isEmpty());
+        assertTrue(result.get("atms").isEmpty());
+        assertTrue(result.get("kiosks").isEmpty());
+        verify(repository).findAll();
     }
 
     @Test
-    void fetchByType_ArabicResult() {
+    void fetchAllTypesAsync_ArabicResult() throws Exception {
+        when(repository.findAll()).thenReturn(List.of(branchEntity, atmEntity, kioskEntity));
 
-        when(repository.findByLocatorTypeIgnoreCase("ATM")).thenReturn(List.of(atmEntity));
-
-        List<LocateUsDTO> result = service.fetchByType("ATM", "ar");
+        CompletableFuture<Map<String, List<LocateUsDTO>>> future = service.fetchAllTypesAsync("ar");
+        Map<String, List<LocateUsDTO>> result = future.get();
 
         assertNotNull(result);
-        assertEquals(1, result.size());
-        LocateUsDTO dto = result.get(0);
-        assertEquals("ATM", dto.getLocatorType());
-        assertEquals("جهاز صراف آلي ١", result.get(0).getName());
-        assertEquals("456 الشارع الرئيسي، الدوحة", result.get(0).getFullAddress());
+        assertEquals(3, result.size());
+
+        List<LocateUsDTO> branches = result.get("branches");
+        List<LocateUsDTO> atms = result.get("atms");
+        List<LocateUsDTO> kiosks = result.get("kiosks");
+
+        assertEquals(1, branches.size());
+        assertEquals("الفرع الرئيسي", branches.get(0).getName());
+        assertEquals("123 الشارع الرئيسي، الدوحة", branches.get(0).getFullAddress());
+        assertEquals("الدوحة", branches.get(0).getCity());
+        assertEquals("الإثنين-الجمعة: ٩:٠٠ ص - ٥:٠٠ م", branches.get(0).getWorkingHours());
+
+        assertEquals(1, atms.size());
+        assertEquals("جهاز صراف آلي ١", atms.get(0).getName());
+        assertEquals("456 الشارع الرئيسي، الدوحة", atms.get(0).getFullAddress());
+        assertEquals("الدوحة", atms.get(0).getCity());
+        assertEquals("٢٤/٧", atms.get(0).getWorkingHours());
+
+        assertEquals(1, kiosks.size());
+        assertEquals("كشك ١", kiosks.get(0).getName());
+        assertEquals("789 الشارع الرئيسي، الدوحة", kiosks.get(0).getFullAddress());
+        assertEquals("الدوحة", kiosks.get(0).getCity());
+        assertEquals("الإثنين-الأحد: ٨:٠٠ ص - ٨:٠٠ م", kiosks.get(0).getWorkingHours());
+
+        verify(repository).findAll();
     }
 
     @Test
-    void calculateStatus_24x7() {
-        when(repository.findByLocatorTypeIgnoreCase("ATM")).thenReturn(List.of(atmEntity));
-
-        List<LocateUsDTO> result = service.fetchByType("ATM", "en");
-        assertEquals("OPEN", result.get(0).getStatus());
-        verify(repository).findByLocatorTypeIgnoreCase("ATM");
-    }
-
-    @Test
-    void calculateStatus_NullWorkingHours() {
-        atmEntity.setWorkingHours(null);
-        atmEntity.setTiming(null);
-        when(repository.findByLocatorTypeIgnoreCase("ATM")).thenReturn(List.of(atmEntity));
-
-        List<LocateUsDTO> result = service.fetchByType("ATM", "en");
-        assertEquals("UNKNOWN", result.get(0).getStatus());
-        verify(repository).findByLocatorTypeIgnoreCase("ATM");
-    }
-
-    @Test
-    void calculateStatus_BlankWorkingHours() {
-        atmEntity.setWorkingHours("");
-        atmEntity.setTiming("");
-        when(repository.findByLocatorTypeIgnoreCase("ATM")).thenReturn(List.of(atmEntity));
-
-        List<LocateUsDTO> result = service.fetchByType("ATM", "en");
-        assertEquals("CLOSED", result.get(0).getStatus());
-        verify(repository).findByLocatorTypeIgnoreCase("ATM");
-    }
-
-    @Test
-    void parseCoordinates_ValidCoordinates() {
-        when(repository.findByLocatorTypeIgnoreCase("ATM")).thenReturn(List.of(atmEntity));
-
-        List<LocateUsDTO> result = service.fetchByType("ATM", "en");
-        CoordinatesDTO coordinates = result.get(0).getCoordinates();
-        assertEquals(25.276987, coordinates.getLatitude());
-        assertEquals(51.520007, coordinates.getLongitude());
-        verify(repository).findByLocatorTypeIgnoreCase("ATM");
-    }
-
-    @Test
-    void parseCoordinates_InvalidCoordinates() {
-        atmEntity.setLatitude("invalid");
-        atmEntity.setLongitude("invalid");
-        when(repository.findByLocatorTypeIgnoreCase("ATM")).thenReturn(List.of(atmEntity));
-
-        List<LocateUsDTO> result = service.fetchByType("ATM", "en");
-        CoordinatesDTO coordinates = result.get(0).getCoordinates();
-        assertEquals(0.0, coordinates.getLatitude());
-        assertEquals(0.0, coordinates.getLongitude());
-        verify(repository).findByLocatorTypeIgnoreCase("ATM");
-    }
-
-    @Test
-    void parseCoordinates_NullCoordinates() {
+    void fetchAllTypesAsync_NullCoordinates() throws Exception {
         atmEntity.setLatitude(null);
         atmEntity.setLongitude(null);
-        when(repository.findByLocatorTypeIgnoreCase("ATM")).thenReturn(List.of(atmEntity));
+        when(repository.findAll()).thenReturn(List.of(atmEntity));
 
-        List<LocateUsDTO> result = service.fetchByType("ATM", "en");
-        CoordinatesDTO coordinates = result.get(0).getCoordinates();
+        CompletableFuture<Map<String, List<LocateUsDTO>>> future = service.fetchAllTypesAsync("en");
+        Map<String, List<LocateUsDTO>> result = future.get();
+
+        List<LocateUsDTO> atms = result.get("atms");
+        assertEquals(1, atms.size());
+        CoordinatesDTO coordinates = atms.get(0).getCoordinates();
         assertEquals(0.0, coordinates.getLatitude());
         assertEquals(0.0, coordinates.getLongitude());
-        verify(repository).findByLocatorTypeIgnoreCase("ATM");
+        verify(repository).findAll();
     }
 
+    @Test
+    void fetchAllTypesAsync_InvalidCoordinates() throws Exception {
+        atmEntity.setLatitude("invalid");
+        atmEntity.setLongitude("invalid");
+        when(repository.findAll()).thenReturn(List.of(atmEntity));
+
+        CompletableFuture<Map<String, List<LocateUsDTO>>> future = service.fetchAllTypesAsync("en");
+        Map<String, List<LocateUsDTO>> result = future.get();
+
+        List<LocateUsDTO> atms = result.get("atms");
+        assertEquals(1, atms.size());
+        CoordinatesDTO coordinates = atms.get(0).getCoordinates();
+        assertEquals(0.0, coordinates.getLatitude());
+        assertEquals(0.0, coordinates.getLongitude());
+        verify(repository).findAll();
+    }
+
+    @Test
+    void fetchAllTypesAsync_Status24x7() throws Exception {
+        when(repository.findAll()).thenReturn(List.of(atmEntity));
+
+        CompletableFuture<Map<String, List<LocateUsDTO>>> future = service.fetchAllTypesAsync("en");
+        Map<String, List<LocateUsDTO>> result = future.get();
+
+        List<LocateUsDTO> atms = result.get("atms");
+        assertEquals(1, atms.size());
+        assertEquals("OPEN", atms.get(0).getStatus());
+        verify(repository).findAll();
+    }
+
+    @Test
+    void fetchAllTypesAsync_NullWorkingHours() throws Exception {
+        atmEntity.setWorkingHours(null);
+        atmEntity.setTiming(null);
+        when(repository.findAll()).thenReturn(List.of(atmEntity));
+
+        CompletableFuture<Map<String, List<LocateUsDTO>>> future = service.fetchAllTypesAsync("en");
+        Map<String, List<LocateUsDTO>> result = future.get();
+
+        List<LocateUsDTO> atms = result.get("atms");
+        assertEquals(1, atms.size());
+        assertEquals("UNKNOWN", atms.get(0).getStatus());
+        verify(repository).findAll();
+    }
+
+    @Test
+    void fetchAllTypesAsync_BlankWorkingHours() throws Exception {
+        atmEntity.setWorkingHours("");
+        atmEntity.setTiming("");
+        when(repository.findAll()).thenReturn(List.of(atmEntity));
+
+        CompletableFuture<Map<String, List<LocateUsDTO>>> future = service.fetchAllTypesAsync("en");
+        Map<String, List<LocateUsDTO>> result = future.get();
+
+        List<LocateUsDTO> atms = result.get("atms");
+        assertEquals(1, atms.size());
+        assertEquals("CLOSED", atms.get(0).getStatus());
+        verify(repository).findAll();
+    }
+
+    @Test
+    void parseCoordinates_ValidCoordinates() throws ExecutionException, InterruptedException {
+        when(repository.findAll()).thenReturn(List.of(atmEntity));
+
+        CompletableFuture<Map<String, List<LocateUsDTO>>> fetched = service.fetchAllTypesAsync("en");
+        Map<String, List<LocateUsDTO>> listMap = fetched.get();
+        List<LocateUsDTO> dtoList = listMap.get("atms");
+
+        CoordinatesDTO coordinates = dtoList.get(0).getCoordinates();
+        assertEquals(25.276987, coordinates.getLatitude());
+        assertEquals(51.520007, coordinates.getLongitude());
+        verify(repository).findAll();
+    }
+
+    @Test
+    void parseCoordinates_InvalidCoordinates() throws ExecutionException, InterruptedException {
+        atmEntity.setLatitude("invalid");
+        atmEntity.setLongitude("invalid");
+        when(repository.findAll()).thenReturn(List.of(atmEntity));
+
+        CompletableFuture<Map<String, List<LocateUsDTO>>> fetched = service.fetchAllTypesAsync("en");
+        Map<String, List<LocateUsDTO>> listMap = fetched.get();
+
+        List<LocateUsDTO> dtoList = listMap.get("atms");
+        CoordinatesDTO coordinates = dtoList.get(0).getCoordinates();
+        assertEquals(0.0, coordinates.getLatitude());
+        assertEquals(0.0, coordinates.getLongitude());
+        verify(repository).findAll();
+    }
+
+    @Test
+    void parseCoordinates_NullCoordinates() throws ExecutionException, InterruptedException {
+        atmEntity.setLatitude(null);
+        atmEntity.setLongitude(null);
+        when(repository.findAll()).thenReturn(List.of(atmEntity));
+
+        CompletableFuture<Map<String, List<LocateUsDTO>>> fetched = service.fetchAllTypesAsync("en");
+        Map<String, List<LocateUsDTO>> listMap = fetched.get();
+        List<LocateUsDTO> dtoList = listMap.get("atms");
+        CoordinatesDTO coordinates = dtoList.get(0).getCoordinates();
+        assertEquals(0.0, coordinates.getLatitude());
+        assertEquals(0.0, coordinates.getLongitude());
+        verify(repository).findAll();
+    }
+
+    @Test
+    void getImageForType_Success() {
+        LocateUsImages locateUsImages = new LocateUsImages();
+        locateUsImages.setId(1);
+        locateUsImages.setLocatorType("BRANCH");
+        locateUsImages.setImage("base64BranchImage");
+        when(imagesRepository.findByLocatorType("BRANCH")).thenReturn(locateUsImages);
+
+        String result = service.getImageForType("BRANCH");
+
+        assertEquals("base64BranchImage", result);
+        verify(imagesRepository).findByLocatorType("BRANCH");
+    }
 }

@@ -1,16 +1,20 @@
 package com.digi.common.adapter.api.controller;
 
+import com.digi.common.CommonServiceV2Application;
 import com.digi.common.adapter.api.service.BankDetailsService;
 import com.digi.common.domain.model.dto.BankDetailsResponseDto;
 import com.digi.common.domain.model.dto.CardBinAllWrapper;
 import com.digi.common.domain.model.dto.DeviceInfo;
 import com.digi.common.domain.model.dto.SocialMedia;
+import com.digi.common.infrastructure.common.AppConstant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,7 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
-@WebMvcTest(BankDetailsController.class)
+@SpringBootTest(classes = CommonServiceV2Application.class)
+@AutoConfigureMockMvc
 class BankDetailsControllerTest {
 
     @Autowired
@@ -124,8 +129,9 @@ class BankDetailsControllerTest {
                         .header("subModuleId", "submodule123")
                 )
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("Required header 'unit' is not present."))
-                .andExpect(jsonPath("$.title").value("Bad Request"));
+                .andExpect(jsonPath("$.status.code").value(AppConstant.CARD_LENGTH_ERROR_CODE))
+                .andExpect(jsonPath("$.status.description").value("Required header 'unit' is missing"))
+                .andExpect(jsonPath("$.data").doesNotExist());
 
     }
 
@@ -145,8 +151,8 @@ class BankDetailsControllerTest {
                         .content(objectMapper.writeValueAsString(cardBinAllWrapper))
                 )
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.status.code").value("G-00001"))
-                .andExpect(jsonPath("$.status.description").value("Internal Server ERROR"))
+                .andExpect(jsonPath("$.status.code").value(AppConstant.VALIDATION_FAILURE_CODE))
+                .andExpect(jsonPath("$.status.description").value(AppConstant.VALIDATION_FAILURE_DESC))
                 .andExpect(jsonPath("$.data").doesNotExist());
 
         verify(bankDetailsService, times(1)).getBankDetails("en");
@@ -167,8 +173,8 @@ class BankDetailsControllerTest {
                         .content(objectMapper.writeValueAsString(cardBinAllWrapper))
                 )
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.status.code").value("G-00000"))
-                .andExpect(jsonPath("$.status.description").value("Unsupported language. Use 'ar' or 'en'."))
+                .andExpect(jsonPath("$.status.code").value(AppConstant.CARD_LENGTH_ERROR_CODE))
+                .andExpect(jsonPath("$.status.description").value(AppConstant.LANGUAGE_ERROR_DESC))
                 .andExpect(jsonPath("$.data").doesNotExist());
     }
 }
