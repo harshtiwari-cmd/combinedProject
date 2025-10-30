@@ -1,0 +1,35 @@
+[
+  {
+    "locatorType": "ايه تي إم",
+    "searchString": null,
+    "coordinates": {
+      "latitude": 25.232232,
+      "longitude": 51.574471
+    },
+    "facility": null,
+    "name": null,
+    "cashDeposit": 1,
+    "cashOut": 1,
+    "chequeDeposit": 1,
+    "city": "الدوحه",
+    "code": "3055",
+    "contactDetails": "8008555.0",
+    "country": "قطر",
+    "disablePeople": 0,
+    "fullAddress": null,
+    "onlineLocation": 1,
+    "timing": null,
+    "typeLocation": null,
+    "workingHours": "24/7",
+    "status": "مفتوح",
+    "dateCreate": "2023-12-20T03:41:00.000+00:00",
+    "userCreate": "OCIETLUSR",
+    "dateModif": "2024-12-15T06:59:00.000+00:00",
+    "userModif": "APPDATA",
+    "maintenanceVendor": null,
+    "atmType": "ايه تي إم",
+    "currencySupported": null,
+    "isActive": "Y",
+    "installationDate": null
+  }
+]

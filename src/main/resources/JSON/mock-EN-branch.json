@@ -1,0 +1,35 @@
+[
+  {
+    "locatorType": "BRANCH",
+    "searchString": null,
+    "coordinates": {
+      "latitude": 25.28461111,
+      "longitude": 51.50636389
+    },
+    "facility": null,
+    "name": null,
+    "cashDeposit": 0,
+    "cashOut": 0,
+    "chequeDeposit": 0,
+    "city": "Doha",
+    "code": "3",
+    "contactDetails": "8008555.0",
+    "country": "Qatar",
+    "disablePeople": 0,
+    "fullAddress": "Al Sadd Branch",
+    "onlineLocation": 0,
+    "timing": "Sunday|7:30|Thursday|13:00",
+    "typeLocation": null,
+    "workingHours": "Sunday to Thursday: 7:30am - 1:00pm\\n",
+    "status": "OPEN",
+    "dateCreate": "2024-10-27T08:34:00.000+00:00",
+    "userCreate": "APPDATA",
+    "dateModif": null,
+    "userModif": null,
+    "maintenanceVendor": null,
+    "atmType": "BRANCH",
+    "currencySupported": null,
+    "isActive": "Y",
+    "installationDate": null
+  }
+]

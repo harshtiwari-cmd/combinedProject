@@ -1,0 +1,30 @@
+mock:
+  enabled: false
+otp:
+  service:
+    url: http://34.1.33.119:9097/rb-user-management/api/v1/otp/generate
+bank:
+  middleware:
+    url: http://localhost:8080
+card:
+  bin:
+    lengths: 6
+spring:
+  application:
+    name: common-service-v2
+  profiles:
+    active: mock
+  main:
+    allow-bean-definition-overriding: true
+
+server:
+  port: 9090
+
+# Default logging configuration
+logging:
+  level:
+    com.digi.common: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
