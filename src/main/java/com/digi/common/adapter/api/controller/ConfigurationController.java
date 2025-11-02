@@ -1,19 +1,14 @@
 package com.digi.common.adapter.api.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.digi.common.adapter.api.service.ConfigurationService;
 import com.digi.common.dto.ApiResponse;
 import com.digi.common.dto.BaseServiceRequest;
 import com.digi.common.dto.ConfigurationDto;
 import com.digi.common.infrastructure.annotation.RequireDeviceInfo;
 import com.digi.common.infrastructure.common.AppConstant;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api")

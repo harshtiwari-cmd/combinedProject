@@ -1,22 +1,19 @@
 package com.digi.common.adapter.api.service.impl;
- 
-import java.util.Base64;
-import java.util.List;
 
 import com.digi.common.adapter.api.service.CustomerPersonaService;
 import com.digi.common.domain.model.dto.PersonaResponseDto;
 import com.digi.common.domain.model.dto.RequestDto;
 import com.digi.common.domain.repository.PersonaRepository;
-import com.digi.common.entity.Personas;
-import com.digi.common.infrastructure.common.AppConstant;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
- 
 import com.digi.common.dto.GenericResponse;
 import com.digi.common.dto.ResultUtilVO;
-
- 
+import com.digi.common.entity.Personas;
+import com.digi.common.infrastructure.common.AppConstant;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.util.Base64;
+import java.util.List;
  
 @Slf4j
 @Service

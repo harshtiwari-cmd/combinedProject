@@ -7,7 +7,6 @@ import com.digi.common.domain.model.NotificationType;
 import com.digi.common.domain.model.dto.NotificationTemplateResponseDto;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 

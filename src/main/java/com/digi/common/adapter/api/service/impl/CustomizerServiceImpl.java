@@ -7,7 +7,6 @@ import com.digi.common.dto.ResultUtilVO;
 import com.digi.common.entity.UserScreenSectionMapping;
 import com.digi.common.infrastructure.common.AppConstant;
 import com.digi.common.repository.JPAUserScreenSectionMapping;
-
 import com.digi.common.view.ScreenSectionView;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

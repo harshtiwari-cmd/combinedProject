@@ -1,9 +1,9 @@
 package com.digi.common.adapter.api.controller;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.digi.common.adapter.api.service.QuickLinkService;
 import com.digi.common.constants.AppConstants;
 import com.digi.common.dto.GenericResponse;
+import com.fasterxml.jackson.core.JsonParseException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

@@ -1,6 +1,7 @@
 package com.digi.common.adapter.api.controller;
 
 import com.digi.common.adapter.api.service.UserService;
+import com.digi.common.constants.AppConstants;
 import com.digi.common.domain.model.dto.DefaultHeadersDto;
 import com.digi.common.domain.model.dto.RequestDto;
 import com.digi.common.domain.model.dto.RuleDTO;
@@ -11,7 +12,7 @@ import com.digi.common.infrastructure.common.HeaderDeviceConstant;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import com.digi.common.constants.AppConstants;
+
 import java.util.List;
 
 @AllArgsConstructor

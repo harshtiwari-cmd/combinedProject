@@ -1,10 +1,10 @@
 package com.digi.common.adapter.api.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.digi.common.adapter.api.service.AppointmentService;
 import com.digi.common.constants.AppConstants;
 import com.digi.common.dto.GenericResponse;
 import com.digi.common.infrastructure.common.AppConstant;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
