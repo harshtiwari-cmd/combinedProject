@@ -1,12 +1,10 @@
 package com.digi.common.adapter.api.controller;
 
 import com.digi.common.adapter.api.service.BankDetailsService;
-import com.digi.common.adapter.api.service.I18Service;
 import com.digi.common.domain.model.dto.BankDetailsResponseDto;
 import com.digi.common.domain.model.dto.CardBinAllWrapper;
 import com.digi.common.domain.model.dto.DeviceInfo;
 import com.digi.common.domain.model.dto.SocialMedia;
-import com.digi.common.infrastructure.common.AppConstant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,14 +19,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+
 @ExtendWith(MockitoExtension.class)
 class BankDetailsControllerTest {
 
-    @Mock
-    private I18Service i18Service;
+
 
     @Mock
     private BankDetailsService bankDetailsService;
