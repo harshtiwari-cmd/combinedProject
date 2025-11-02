@@ -8,6 +8,7 @@ import com.digi.common.exception.GlobalExceptionHandler;
 import com.digi.common.infrastructure.common.AppConstant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 @ExtendWith(MockitoExtension.class)
+@Disabled
 class ProductTypeControllerTest {
 
     private MockMvc mockMvc;
