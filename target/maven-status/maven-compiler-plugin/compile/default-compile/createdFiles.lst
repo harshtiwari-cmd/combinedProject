@@ -240,6 +240,7 @@ com\digi\common\domain\model\dto\MiddlewareResponseDto$MiddlewareResponseDtoBuil
 com\digi\common\infrastructure\persistance\CardValidation$CardValidationBuilder.class
 com\digi\common\domain\model\dto\RequestDto.class
 com\digi\common\config\ErrorMessages.class
+com\digi\common\domain\model\dto\CardBinAllWrapper$CardBinAllWrapperBuilder.class
 com\digi\common\infrastructure\config\AuditingConfig.class
 com\digi\common\adapter\api\service\ProfileRestService.class
 com\digi\common\exception\MiddlewareException.class

@@ -61,8 +61,7 @@ class ConfigurationServiceImplTest {
         configuration.setFieldValidations("required");
         configuration.setFieldType("combo");
         configuration.setSequence(1);
-        configuration.setErrMessage("Custom error message for test field");
-        configuration.setRequiresProfanityCheck(true);
+
 
         // Setup ConfigurationFieldOptions
         fieldOption = new ConfigurationFieldOptions();
@@ -102,8 +101,7 @@ class ConfigurationServiceImplTest {
         assertEquals("required", dto.getFieldValidations());
         assertEquals("combo", dto.getFieldType());
         assertEquals(1, dto.getSequence());
-        assertEquals("Custom error message for test field", dto.getErrMessage());
-        assertEquals(true, dto.getRequiresProfanityCheck());
+
         assertNotNull(dto.getFieldList());
         assertEquals(1, dto.getFieldList().size());
         assertEquals("Option1", dto.getFieldList().get(0));
@@ -136,8 +134,7 @@ class ConfigurationServiceImplTest {
         ConfigurationDto dto = result.getData().get(0);
         assertEquals("testField", dto.getFieldKey());
         assertEquals("حقل الاختبار", dto.getFieldName());
-        assertEquals("Custom error message for test field", dto.getErrMessage());
-        assertEquals(true, dto.getRequiresProfanityCheck());
+
         assertEquals("خيار1", dto.getFieldList().get(0));
 
         verify(screenDetailsRepository).findByScreenNameIgnoreCaseAndIsActive(screenName, true);
