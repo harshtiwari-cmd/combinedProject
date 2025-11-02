@@ -459,4 +459,10 @@ public class AppConstant {
     public static final String BAD_REQUEST_CODE = "000400";
     public static final String BAD_REQUEST_DESC = "Bad Request";
 
+    public static final String DEVICE_INFO_DESC = "Device Info Not Found";
+    public static final String MANDATORY_HEADERS_DESC = "Mandatory Headers not Found";
+
+    public static final String REQUEST_INFO_DESC="Request Info Not Found";
+
+
 }

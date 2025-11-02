@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.digi.common.constants.AppConstants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +45,6 @@ class ProductTypeServiceImplTest {
     private DefaultHeadersDto headersEn;
     private DefaultHeadersDto headersAr;
     private RequestDto request;
-
     private ProductType product;
     private SubProduct subProduct;
 
@@ -80,7 +80,7 @@ class ProductTypeServiceImplTest {
         when(productTypeRepository.findAllActiveWithSubProducts()).thenReturn(List.of(product));
         GenericResponse<List<ProductTypeDto>> res = service.getActiveProductTypes(headersEn, request);
 
-        assertEquals(AppConstant.RESULT_CODE, res.getStatus().getCode());
+        assertEquals(AppConstants.RESULT_CODE, res.getStatus().getCode());
         assertEquals(1, res.getData().size());
         assertEquals("Cards", res.getData().get(0).getProductName());
     }
@@ -90,7 +90,7 @@ class ProductTypeServiceImplTest {
         when(productTypeRepository.findAllActiveWithSubProducts()).thenReturn(List.of(product));
         GenericResponse<List<ProductTypeDto>> res = service.getActiveProductTypes(headersAr, request);
 
-        assertEquals(AppConstant.RESULT_CODE, res.getStatus().getCode());
+        assertEquals(AppConstants.RESULT_CODE, res.getStatus().getCode());
         assertEquals("بطاقات", res.getData().get(0).getProductName());
     }
 
@@ -127,7 +127,7 @@ class ProductTypeServiceImplTest {
         when(productTypeRepository.findAllActiveWithSubProducts()).thenReturn(List.of(product));
         GenericResponse<List<ProductImageDto>> res = service.getActiveProductImages(headersEn, request);
 
-        assertEquals(AppConstant.RESULT_CODE, res.getStatus().getCode());
+        assertEquals(AppConstants.RESULT_CODE, res.getStatus().getCode());
         assertEquals(1, res.getData().size());
     }
 
@@ -202,6 +202,21 @@ class ProductTypeServiceImplTest {
         assertNull(res.getData());
     }
 
+    // Added — verify ID validation (invalid or missing IDs)
+    @Test
+    void testGetProdOrSubProdImgsById_invalidId_null() {
+        GenericResponse<Map<String, String>> res = service.getProdOrSubProdImgsById("product", null, request, headersEn);
+        assertEquals(AppConstant.BAD_REQUEST_CODE, res.getStatus().getCode());
+        assertNull(res.getData());
+    }
+
+    @Test
+    void testGetProdOrSubProdImgsById_invalidId() {
+        GenericResponse<Map<String, String>> res = service.getProdOrSubProdImgsById("product", null, request, headersEn);
+        assertEquals(AppConstant.BAD_REQUEST_CODE, res.getStatus().getCode());
+        assertNull(res.getData());
+    }
+
     // ---------------- getSubProdImgsByPrdId ----------------
     @Test
     void testGetSubProdImgsByPrdId_success() {
@@ -230,6 +245,14 @@ class ProductTypeServiceImplTest {
         assertNull(res.getData());
     }
 
+    //  Added — invalid ID cases for getSubProdImgsByPrdId
+    @Test
+    void testGetSubProdImgsByPrdId_invalidId() {
+        GenericResponse<List<Map<String, String>>> res = service.getSubProdImgsByPrdId(null, request, headersEn);
+        assertEquals(AppConstant.BAD_REQUEST_CODE, res.getStatus().getCode());
+        assertNull(res.getData());
+    }
+
     // ---------------- getSubProdImgsWithDescByProdId ----------------
     @Test
     void testGetSubProdImgsWithDescByProdId_english() {
@@ -247,9 +270,8 @@ class ProductTypeServiceImplTest {
     @Test
     void testGetSubProdImgsWithDescByProdId_arabic() {
         Object[] obj1 = {"img".getBytes(), "DescEn", "DescAr"};
-        List<Object[]>al=   new ArrayList<>();
+        List<Object[]> al = new ArrayList<>();
         al.add(obj1);
-
         when(productTypeRepository.findSubProductImageAndDescriptionsByProductId(1L))
                 .thenReturn(al);
 
@@ -262,7 +284,7 @@ class ProductTypeServiceImplTest {
     @Test
     void testGetSubProdImgsWithDescByProdId_nullImage() {
         Object[] obj = {null, "DescEn", "DescAr"};
-        List<Object[]>al=   new ArrayList<>();
+        List<Object[]> al = new ArrayList<>();
         al.add(obj);
         when(productTypeRepository.findSubProductImageAndDescriptionsByProductId(1L))
                 .thenReturn(al);
@@ -290,4 +312,13 @@ class ProductTypeServiceImplTest {
         assertEquals(AppConstant.GEN_ERROR_CODE, res.getStatus().getCode());
         assertNull(res.getData());
     }
+
+    //  Added — invalid ID cases for getSubProdImgsWithDescByProdId
+    @Test
+    void testGetSubProdImgsWithDescByProdId_invalidId() {
+        GenericResponse<List<Map<String, String>>> res = service.getSubProdImgsWithDescByProdId(null, request, headersEn);
+        assertEquals(AppConstant.BAD_REQUEST_CODE, res.getStatus().getCode());
+        assertNull(res.getData());
+    }
+
 }

@@ -5,6 +5,9 @@ import com.digi.common.domain.model.dto.DefaultHeadersDto;
 import com.digi.common.domain.model.dto.RequestDto;
 import com.digi.common.domain.model.dto.RuleDTO;
 import com.digi.common.dto.GenericResponse;
+import com.digi.common.dto.ResultUtilVO;
+import com.digi.common.infrastructure.common.AppConstant;
+import com.digi.common.infrastructure.common.HeaderDeviceConstant;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +30,21 @@ public class UserController {
                                                    @RequestHeader(name = AppConstants.SUB_MODULE_ID) String subModuleId,
                                                    @RequestHeader(name = AppConstants.SCREENID) String screenId,
                                                    @RequestHeader(name = AppConstants.CHANNEL) String channel,
-                                                   @RequestHeader(name = AppConstants.ACCEPT_LANGUAGE, defaultValue = AppConstants.DEFAULT_LANG, required = false) String acceptLanguage) {
+                                                   @RequestHeader(name = AppConstants.ACCEPT_LANGUAGE, defaultValue = "en", required = false) String acceptLanguage) {
+
+        // Validate mandatory headers
+        List<String> missing = HeaderDeviceConstant.missingMandatoryHeaders(
+                serviceId, moduleId, subModuleId, screenId, channel
+        );
+
+        if (!missing.isEmpty()) {
+            System.out.println(missing+"3-------------------------------------");
+            return new GenericResponse<>(
+                    new ResultUtilVO(AppConstant.BAD_REQUEST_CODE, AppConstant.MANDATORY_HEADERS_DESC),
+                    null
+            );
+        }
+
         DefaultHeadersDto headers = new DefaultHeadersDto(
                 serviceId, moduleId, subModuleId, screenId, channel, acceptLanguage
         );
@@ -37,5 +54,6 @@ public class UserController {
                 requestDto.getRequestInfoDto().getType(),
                 headers.getAcceptLanguage(),
                 requestDto
-        );  }
+        );
+    }
 } 

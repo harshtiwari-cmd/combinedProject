@@ -5,6 +5,6 @@ import com.digi.common.dto.LabelListRes;
 
 public interface I18Service {
 
-	GenericResponse<LabelListRes> labelList(String unit, String channel, String lang);
+	GenericResponse<LabelListRes> labelList(String serviceId, String moduleId, String subModuleId, String screenId, String unit, String channel, String lang);
 
 }

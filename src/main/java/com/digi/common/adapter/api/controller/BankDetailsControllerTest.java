@@ -6,7 +6,6 @@ import com.digi.common.domain.model.dto.BankDetailsResponseDto;
 import com.digi.common.domain.model.dto.CardBinAllWrapper;
 import com.digi.common.domain.model.dto.DeviceInfo;
 import com.digi.common.domain.model.dto.SocialMedia;
-import com.digi.common.infrastructure.common.AppConstant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

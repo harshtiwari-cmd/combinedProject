@@ -18,7 +18,7 @@ spring:
     allow-bean-definition-overriding: true
 
 server:
-  port: 9090
+  port: 8082
 
 # Default logging configuration
 logging:

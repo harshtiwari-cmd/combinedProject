@@ -1,4 +1,5 @@
 package com.digi.common.adapter.api.controller;
+
 import com.digi.common.adapter.api.service.LocateUsService;
 import com.digi.common.domain.model.dto.CardBinAllWrapper;
 import com.digi.common.domain.model.dto.CoordinatesDTO;
@@ -16,14 +17,15 @@ import org.springframework.http.ResponseEntity;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class LocateUsControllerMockitoTest {

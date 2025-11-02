@@ -12,11 +12,11 @@ import lombok.Setter;
 public class RequestDto {
 
     private RequestInfoDto requestInfoDto;
-    private DeviceInfoDto deviceInfoDto;
+    private DeviceInfoDto deviceInfo;
 
 
-    public RequestDto( DeviceInfoDto deviceInfoDto) {
-        this.deviceInfoDto = deviceInfoDto;
+    public RequestDto( DeviceInfoDto deviceInfo) {
+        this.deviceInfo = deviceInfo;
     }
 
 

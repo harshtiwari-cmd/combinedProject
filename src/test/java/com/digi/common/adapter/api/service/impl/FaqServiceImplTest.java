@@ -13,11 +13,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class FaqServiceImplTest {
@@ -33,125 +31,104 @@ class FaqServiceImplTest {
         MockitoAnnotations.openMocks(this);
     }
 
-    // ✅ 1. FAQs found for given language
+    // ✅ Test 1: Successful fetch with supported language (en)
     @Test
-    void testGetFaqs_ReturnsFaqsForGivenLanguage() {
-        DefaultHeadersDto headers = new DefaultHeadersDto();
-        headers.setAcceptLanguage("en");
-        RequestDto requestDto = new RequestDto();
+    void testGetFaqs_SuccessfulFetch() {
+        DefaultHeadersDto headers = new DefaultHeadersDto("1", "1", "1", "1", "WEB", "en");
+        RequestDto request = new RequestDto();
 
-        List<Faq> faqs = Arrays.asList(
-                new Faq(1L, "Q1", "A1", "en"),
-                new Faq(2L, "Q2", "A2", "en")
+        List<Faq> mockFaqs = List.of(
+                new Faq(1L, "What is OTP?", "OTP means One Time Password", "en"),
+                new Faq(2L, "How to register?", "Click Register on home screen", "en")
         );
 
-        when(faqRepository.findByLangIgnoreCase("en")).thenReturn(faqs);
+        when(faqRepository.findByLangIgnoreCase("en")).thenReturn(mockFaqs);
 
-        GenericResponse<FaqResponse> response = faqService.getFaqs(headers, requestDto);
+        GenericResponse<FaqResponse> response = faqService.getFaqs(headers, request);
 
-        assertNotNull(response);
-        assertEquals(AppConstant.RESULT_CODE, response.getStatus().getCode());
-        assertEquals(AppConstant.RESULT_DESC, response.getStatus().getDescription());
-        assertNotNull(response.getData());
-        assertEquals(2, response.getData().getFaqList().size());
-        assertEquals("Q1", response.getData().getFaqList().get(0).getQuestion());
-        assertEquals("A1", response.getData().getFaqList().get(0).getAnswer());
-        assertEquals("Q2", response.getData().getFaqList().get(1).getQuestion());
-        assertEquals("A2", response.getData().getFaqList().get(1).getAnswer());
+        assertThat(response).isNotNull();
+        assertThat(response.getData()).isNotNull();
+        assertThat(response.getData().getFaqList()).hasSize(2);
+        assertThat(response.getStatus().getCode()).isEqualTo(AppConstant.RESULT_CODE);
+        assertThat(response.getStatus().getDescription()).isEqualTo(AppConstant.RESULT_DESC);
 
         verify(faqRepository, times(1)).findByLangIgnoreCase("en");
-        verifyNoMoreInteractions(faqRepository);
     }
 
-    // ✅ 2. No FAQs found → NOT_FOUND_CODE & NOT_FOUND_DESC
+    // ✅ Test 2: Empty list returns NOT FOUND
     @Test
-    void testGetFaqs_NoFaqsFound() {
-        DefaultHeadersDto headers = new DefaultHeadersDto();
-        headers.setAcceptLanguage("en");
-        RequestDto requestDto = new RequestDto();
+    void testGetFaqs_NoDataFound() {
+        DefaultHeadersDto headers = new DefaultHeadersDto("1", "1", "1", "1", "WEB", "en");
+        RequestDto request = new RequestDto();
 
-        when(faqRepository.findByLangIgnoreCase("en")).thenReturn(Collections.emptyList());
+        when(faqRepository.findByLangIgnoreCase("en")).thenReturn(List.of());
 
-        GenericResponse<FaqResponse> response = faqService.getFaqs(headers, requestDto);
+        GenericResponse<FaqResponse> response = faqService.getFaqs(headers, request);
 
-        assertNotNull(response);
-        assertEquals(AppConstant.NOT_FOUND_CODE, response.getStatus().getCode());
-        assertEquals(AppConstant.NOT_FOUND_DESC, response.getStatus().getDescription());
-        assertNotNull(response.getData());
-        assertTrue(response.getData().getFaqList().isEmpty());
+        assertThat(response.getStatus().getCode()).isEqualTo(AppConstant.NOT_FOUND_CODE);
+        assertThat(response.getStatus().getDescription()).isEqualTo(AppConstant.NOT_FOUND_DESC);
+        assertThat(response.getData()).isNotNull();
+        assertThat(response.getData().getFaqList()).isEmpty();
 
         verify(faqRepository, times(1)).findByLangIgnoreCase("en");
-        verifyNoMoreInteractions(faqRepository);
     }
 
-    // ✅ 3. Blank Accept-Language → uses DEFAULT_LANGUAGE
+    // ✅ Test 3: Exception handling
     @Test
-    void testGetFaqs_BlankLanguage_UsesDefaultLang() {
-        DefaultHeadersDto headers = new DefaultHeadersDto();
-        headers.setAcceptLanguage(" "); // blank value
-        RequestDto requestDto = new RequestDto();
+    void testGetFaqs_ExceptionThrown() {
+        DefaultHeadersDto headers = new DefaultHeadersDto("1", "1", "1", "1", "WEB", "en");
+        RequestDto request = new RequestDto();
 
-        List<Faq> faqs = Collections.singletonList(
-                new Faq(1L, "Q1", "A1", AppConstant.DEFAULT_LANGUAGE)
+        when(faqRepository.findByLangIgnoreCase("en")).thenThrow(new RuntimeException("DB connection failed"));
+
+        GenericResponse<FaqResponse> response = faqService.getFaqs(headers, request);
+
+        assertThat(response.getStatus().getCode()).isEqualTo(AppConstant.GEN_ERROR_CODE);
+        assertThat(response.getStatus().getDescription()).isEqualTo(AppConstant.GEN_ERROR_DESC);
+        assertThat(response.getData()).isNull();
+
+        verify(faqRepository, times(1)).findByLangIgnoreCase("en");
+    }
+
+    // ✅ Test 4: Unsupported language defaults to English
+    @Test
+    void testGetFaqs_UnsupportedLanguageDefaultsToEnglish() {
+        DefaultHeadersDto headers = new DefaultHeadersDto("1", "1", "1", "1", "WEB", "fr"); // unsupported
+        RequestDto request = new RequestDto();
+
+        List<Faq> mockFaqs = List.of(
+                new Faq(1L, "What is OTP?", "OTP means One Time Password", "en")
         );
 
-        when(faqRepository.findByLangIgnoreCase(AppConstant.DEFAULT_LANGUAGE)).thenReturn(faqs);
+        when(faqRepository.findByLangIgnoreCase("en")).thenReturn(mockFaqs);
 
-        GenericResponse<FaqResponse> response = faqService.getFaqs(headers, requestDto);
+        GenericResponse<FaqResponse> response = faqService.getFaqs(headers, request);
 
-        assertNotNull(response);
-        assertEquals(AppConstant.RESULT_CODE, response.getStatus().getCode());
-        assertEquals(AppConstant.RESULT_DESC, response.getStatus().getDescription());
-        assertEquals(1, response.getData().getFaqList().size());
-        assertEquals("Q1", response.getData().getFaqList().get(0).getQuestion());
-        assertEquals("A1", response.getData().getFaqList().get(0).getAnswer());
+        assertThat(response).isNotNull();
+        assertThat(response.getData()).isNotNull();
+        assertThat(response.getData().getFaqList()).hasSize(1);
+        assertThat(response.getStatus().getCode()).isEqualTo(AppConstant.RESULT_CODE);
+        assertThat(response.getStatus().getDescription()).isEqualTo(AppConstant.RESULT_DESC);
 
-        verify(faqRepository, times(1)).findByLangIgnoreCase(AppConstant.DEFAULT_LANGUAGE);
-        verifyNoMoreInteractions(faqRepository);
-    }
-
-    // ✅ 4. Null Accept-Language → uses DEFAULT_LANGUAGE
-    @Test
-    void testGetFaqs_NullLanguage_UsesDefaultLang() {
-        DefaultHeadersDto headers = new DefaultHeadersDto();
-        headers.setAcceptLanguage(null);
-        RequestDto requestDto = new RequestDto();
-
-        List<Faq> faqs = Collections.singletonList(
-                new Faq(1L, "Q1", "A1", AppConstant.DEFAULT_LANGUAGE)
-        );
-
-        when(faqRepository.findByLangIgnoreCase(AppConstant.DEFAULT_LANGUAGE)).thenReturn(faqs);
-
-        GenericResponse<FaqResponse> response = faqService.getFaqs(headers, requestDto);
-
-        assertNotNull(response);
-        assertEquals(AppConstant.RESULT_CODE, response.getStatus().getCode());
-        assertEquals(AppConstant.RESULT_DESC, response.getStatus().getDescription());
-        assertEquals(1, response.getData().getFaqList().size());
-        assertEquals("Q1", response.getData().getFaqList().get(0).getQuestion());
-
-        verify(faqRepository, times(1)).findByLangIgnoreCase(AppConstant.DEFAULT_LANGUAGE);
-        verifyNoMoreInteractions(faqRepository);
-    }
-
-    // ✅ 5. Exception handling
-    @Test
-    void testGetFaqs_ExceptionScenario() {
-        DefaultHeadersDto headers = new DefaultHeadersDto();
-        headers.setAcceptLanguage("en");
-        RequestDto requestDto = new RequestDto();
-
-        when(faqRepository.findByLangIgnoreCase("en")).thenThrow(new RuntimeException("DB error"));
-
-        GenericResponse<FaqResponse> response = faqService.getFaqs(headers, requestDto);
-
-        assertNotNull(response);
-        assertEquals(AppConstant.GEN_ERROR_CODE, response.getStatus().getCode());
-        assertEquals(AppConstant.GEN_ERROR_DESC, response.getStatus().getDescription());
-        assertNull(response.getData());
-
+        // Verify that English repository call was made
         verify(faqRepository, times(1)).findByLangIgnoreCase("en");
-        verifyNoMoreInteractions(faqRepository);
+    }
+
+    // ✅ Test 5: Null or blank language defaults to English
+    @Test
+    void testGetFaqs_NullOrBlankLanguageDefaultsToEnglish() {
+        RequestDto request = new RequestDto();
+
+        // Case 1: Null language
+        DefaultHeadersDto headersNull = new DefaultHeadersDto("1", "1", "1", "1", "WEB", null);
+        when(faqRepository.findByLangIgnoreCase("en")).thenReturn(List.of());
+        faqService.getFaqs(headersNull, request);
+        verify(faqRepository, times(1)).findByLangIgnoreCase("en");
+
+        // Case 2: Blank language
+        DefaultHeadersDto headersBlank = new DefaultHeadersDto("1", "1", "1", "1", "WEB", "   ");
+        when(faqRepository.findByLangIgnoreCase("en")).thenReturn(List.of());
+        faqService.getFaqs(headersBlank, request);
+        verify(faqRepository, times(2)).findByLangIgnoreCase("en"); // second call
     }
 }

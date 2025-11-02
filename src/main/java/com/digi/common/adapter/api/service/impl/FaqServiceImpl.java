@@ -32,9 +32,16 @@ public class FaqServiceImpl implements FaqService {
         GenericResponse<FaqResponse> response = new GenericResponse<>();
 
         try {
+            // Normalize language
             String lang = (headers.getAcceptLanguage() == null || headers.getAcceptLanguage().isBlank())
                     ? AppConstant.DEFAULT_LANGUAGE
-                    : headers.getAcceptLanguage();
+                    : headers.getAcceptLanguage().trim().toLowerCase();
+
+            // Default to English if language not supported
+            if (!lang.equals("en") && !lang.equals("ar")) {
+                log.warn("Unsupported language '{}', defaulting to English.", lang);
+                lang = "en";
+            }
 
             log.info("Fetching FAQs for language: {}", lang);
 
@@ -53,7 +60,6 @@ public class FaqServiceImpl implements FaqService {
             }
 
             response.setData(faqResponse);
-
             log.info("FAQs retrieved. Total FAQs: {}", faqs.size());
 
         } catch (Exception e) {

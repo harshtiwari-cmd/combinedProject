@@ -85,7 +85,7 @@ public class OtpServiceImpl implements OtpService {
             if (cfgOpt.isEmpty()) {
                 logger.warn("No OTP configuration found for screenId={}", screenId);
                 return new GenericResponse<>(
-                        new ResultUtilVO(AppConstant.NOT_FOUND_CODE, AppConstant.NOT_FOUND_DESC),
+                        new ResultUtilVO(AppConstant.BAD_REQUEST_CODE, AppConstant.BAD_REQUEST_DESC),
                         null
                 );
             }
@@ -99,6 +99,7 @@ public class OtpServiceImpl implements OtpService {
                         null
                 );
             }
+
 
             OtpConfigResponseDto dto = new OtpConfigResponseDto(
                     cfg.getOtpLength(),

@@ -2,12 +2,10 @@ package com.digi.common.adapter.api.controller;
 
 import com.digi.common.adapter.api.service.*;
 import com.digi.common.domain.model.dto.*;
+import com.digi.common.dto.*;
 import com.digi.common.infrastructure.common.AppConstant;
 import com.digi.common.constants.AppConstants;
-import com.digi.common.dto.GenericResponse;
-import com.digi.common.dto.LabelListRes;
-import com.digi.common.dto.ProductMasterDto;
-import com.digi.common.dto.TermsAndConditionDto;
+import com.digi.common.infrastructure.common.HeaderDeviceConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -38,13 +36,38 @@ public class CommonController {
     @Autowired
     private CustomizerService customizerService;
 
+    @Autowired
+    private CustomerPersonaService  customerPersonaService;
+
     @PostMapping("/labels")
     public GenericResponse<LabelListRes> labelList(
+            @RequestBody RequestDto requestDto,
+            @RequestHeader(name = AppConstants.SERVICEID) String serviceId,
+            @RequestHeader(name = AppConstants.MODULE_ID) String moduleId,
+            @RequestHeader(name = AppConstants.SUB_MODULE_ID) String subModuleId,
+            @RequestHeader(name = AppConstants.SCREENID) String screenId,
             @RequestHeader(name = AppConstants.UNIT) String unit,
             @RequestHeader(name = AppConstants.CHANNEL)String channel,
             @RequestHeader(name = AppConstants.ACCEPT_LANGUAGE)String lang) {
 
-        return i18Service.labelList(unit, channel, lang);
+        // Validate mandatory headers
+        List<String> missing = HeaderDeviceConstant.missingMandatoryHeaders(
+                serviceId, moduleId, subModuleId, screenId, channel);
+        if (!missing.isEmpty()) {
+            System.out.println(missing + "3-------------------------------------");
+            return new GenericResponse<>(
+                    new ResultUtilVO(AppConstant.BAD_REQUEST_CODE, AppConstant.MANDATORY_HEADERS_DESC),
+                    null
+            );
+        }
+        if (!HeaderDeviceConstant.hasValidDeviceInfo(requestDto)) {
+            return new GenericResponse<>(
+                    new ResultUtilVO(AppConstant.BAD_REQUEST_CODE, AppConstant.DEVICE_INFO_DESC),
+                    null
+            );
+        }
+        return i18Service.labelList(serviceId, moduleId, subModuleId, screenId, unit, channel, lang);
+
     }
 
     @PostMapping("/fxRate")
@@ -140,5 +163,36 @@ public class CommonController {
             @RequestHeader(name = AppConstants.SUB_MODULE_ID) String subModuleId) {
 
         return menuService.serviceEntitlement(unit, channel, lang, serviceId, screenId, moduleId, subModuleId);
+    }
+
+    @PostMapping("/getAllPersonas")
+    public GenericResponse<List<PersonaResponseDto>> fetchAllPersonas(
+            @RequestHeader(name = AppConstants.SERVICEID) String serviceId,
+            @RequestHeader(name = AppConstants.MODULE_ID) String moduleId,
+            @RequestHeader(name = AppConstants.SUB_MODULE_ID) String subModuleId,
+            @RequestHeader(name = AppConstants.SCREENID) String screenId,
+            @RequestHeader(name = AppConstants.CHANNEL) String channel,
+            @RequestHeader(name = AppConstants.ACCEPT_LANGUAGE, defaultValue = "en", required = false) String acceptLanguage,
+            @RequestBody RequestDto requestDto){
+        String languageCode = HeaderDeviceConstant.mapLanguage(acceptLanguage);
+        // Validate mandatory headers
+        List<String> missing = HeaderDeviceConstant.missingMandatoryHeaders(
+                serviceId, moduleId, subModuleId, screenId, channel);
+        if (!missing.isEmpty()) {
+            return new GenericResponse<>(
+                    new ResultUtilVO(AppConstant.BAD_REQUEST_CODE, AppConstant.MANDATORY_HEADERS_DESC),
+                    null
+            );
+        }
+        if (!HeaderDeviceConstant.hasValidDeviceInfo(requestDto)) {
+            return new GenericResponse<>(
+                    new ResultUtilVO(AppConstant.BAD_REQUEST_CODE, AppConstant.DEVICE_INFO_DESC),
+                    null
+            );
+        }
+
+        DefaultHeadersDto headers = new DefaultHeadersDto
+                (serviceId, moduleId, subModuleId, screenId, channel, languageCode);
+        return customerPersonaService.getAllThePersonas(requestDto);
     }
 }

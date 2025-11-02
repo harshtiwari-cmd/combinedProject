@@ -8,6 +8,7 @@ import com.digi.common.domain.repository.RuleRepository;
 import com.digi.common.dto.GenericResponse;
 import com.digi.common.dto.ResultUtilVO;
 import com.digi.common.infrastructure.common.AppConstant;
+import com.digi.common.infrastructure.common.HeaderDeviceConstant;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,48 +27,86 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public GenericResponse<List<RuleDTO>> getRules(String type, String lang, RequestDto requestDto) {
-        log.info("Entering getRules() with type='{}', lang='{}', requestId='{}'",
-                type, lang, requestDto != null ? requestDto.getRequestInfoDto().getId() : "N/A");
+        final String reqId = (requestDto != null && requestDto.getRequestInfoDto() != null)
+                ? String.valueOf(requestDto.getRequestInfoDto().getId())
+                : "N/A";
+        log.info("Entering getRules() type='{}', lang='{}', requestId='{}'", type, lang, reqId);
 
         try {
-            // --- Validate Type ---
+            // 000400: invalid type
             if (!"username".equalsIgnoreCase(type) && !"password".equalsIgnoreCase(type)) {
-                log.warn("Invalid 'type' parameter received: {}", type);
+                log.warn("Invalid 'type' parameter: {}", type);
                 return new GenericResponse<>(
-                        new ResultUtilVO(AppConstant.BAD_REQUEST_CODE, AppConstant.BAD_REQUEST_DESC),
+                        new ResultUtilVO(AppConstant.BAD_REQUEST_CODE, AppConstant.BAD_REQUEST_DESC + ": Invalid type"),
                         null
                 );
             }
 
-            // --- Validate and Map Language ---
-            String languageCode = mapLanguage(lang);
-            if (languageCode == null) {
-                log.warn("Invalid language code received: {}", lang);
+            // 000400: invalid language (via helper)
+            String languageCode = HeaderDeviceConstant.mapLanguage(lang);
+
+            //000400: RequestInfoDto Not Found
+            if (HeaderDeviceConstant.checkRequestInfoDto(requestDto.getRequestInfoDto())) {
                 return new GenericResponse<>(
-                        new ResultUtilVO(AppConstant.BAD_REQUEST_CODE, AppConstant.BAD_REQUEST_DESC + ": Allowed values 'en', 'ar'"),
+                        new ResultUtilVO(AppConstant.BAD_REQUEST_CODE, AppConstant.REQUEST_INFO_DESC),
                         null
                 );
             }
 
-            // --- Fetch Active Rules ---
-            List<RuleEntity> rulesFromDb = ruleRepository.findByTypeAndLanguageAndStatusTrue(type.toLowerCase(), languageCode);
+            // 000400: device info not found (via helper)
+            if (!HeaderDeviceConstant.hasValidDeviceInfo(requestDto)) {
+                log.warn("Device info not found or incomplete for requestId={}", reqId);
+                return new GenericResponse<>(
+                        new ResultUtilVO(AppConstant.BAD_REQUEST_CODE, AppConstant.DEVICE_INFO_DESC),
+                        null
+                );
+            }
 
-            if (rulesFromDb.isEmpty()) {
-                log.warn("No active rules found for type='{}' and language='{}'", type, languageCode);
+            // 000409: duplicate (inline stub as before)
+            boolean isDuplicate = false;
+            if (isDuplicate) {
+                log.warn("Duplicate request detected for requestId={}", reqId);
+                return new GenericResponse<>(
+                        new ResultUtilVO(AppConstant.DUPLICATE_REQUEST_CODE, AppConstant.DUPLICATE_REQUEST_DESC),
+                        null
+                );
+            }
+
+            // Repository call
+            List<RuleEntity> rulesFromDb =
+                    ruleRepository.findByTypeAndLanguageAndStatusTrue(type.toLowerCase(), languageCode);
+
+            // 000404: not found
+            if (rulesFromDb == null || rulesFromDb.isEmpty()) {
+                log.warn("No active rules found for type='{}' and lang='{}'", type, languageCode);
                 return new GenericResponse<>(
                         new ResultUtilVO(AppConstant.NOT_FOUND_CODE, AppConstant.NOT_FOUND_DESC),
                         null
                 );
             }
 
-            // --- Convert to DTO (no status) ---
+            // 000000: success
             List<RuleDTO> rules = rulesFromDb.stream()
-                    .map(rule -> new RuleDTO(rule.getDescription(), rule.getPattern()))
+                    .map(r -> new RuleDTO(r.getDescription(), r.getPattern()))
                     .collect(Collectors.toList());
 
             return new GenericResponse<>(
                     new ResultUtilVO(AppConstant.RESULT_CODE, AppConstant.RESULT_DESC),
                     rules
+            );
+
+        } catch (org.springframework.dao.QueryTimeoutException te) {
+            log.error("Query timeout for getRules(): {}", te.getMessage(), te);
+            return new GenericResponse<>(
+                    new ResultUtilVO(AppConstant.REQUEST_TIMEOUT_CODE, AppConstant.REQUEST_TIMEOUT_DESC),
+                    null
+            );
+
+        } catch (org.springframework.dao.DataAccessResourceFailureException ex) {
+            log.error("Database/service unavailable in getRules(): {}", ex.getMessage(), ex);
+            return new GenericResponse<>(
+                    new ResultUtilVO(AppConstant.SERVICE_UNAVAILABLE_CODE, AppConstant.SERVICE_UNAVAILABLE_DESC),
+                    null
             );
 
         } catch (Exception e) {
@@ -77,25 +116,6 @@ public class UserServiceImpl implements UserService {
                     null
             );
         }
-    }
 
-    // --- Helper method to map language names to codes ---
-    private String mapLanguage(String lang) {
-        if (lang == null || lang.isEmpty()) {
-            return null;
-        }
-
-        lang = lang.trim().toLowerCase();
-
-        switch (lang) {
-            case "en":
-            case "english":
-                return "en";
-            case "ar":
-            case "arabic":
-                return "ar";
-            default:
-                return null; // invalid language
-        }
     }
 }
