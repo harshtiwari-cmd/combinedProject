@@ -67,6 +67,39 @@ class MockCardStatusServiceImplTest {
     }
 
     @Test
+    void testValidateCardStatus_DefaultSuccessResponse() throws IOException {
+
+        CardStatusValidationRequest request = new CardStatusValidationRequest();
+
+        request.setCardNumber("3333331234567889");
+        DeviceInfo deviceInfo = new DeviceInfo();
+
+        CardStatusResponse statusResponse = CardStatusResponse.builder()
+                .cardValid(true)
+                .activationFlag("Active")
+                .build();
+
+        GenericResponse<CardStatusResponse> responseGenericResponse = GenericResponse.success(statusResponse);
+
+        when(objectMapper.readValue(
+                (InputStream) any(InputStream.class),
+                ArgumentMatchers.<TypeReference<GenericResponse<CardStatusResponse>>>any()
+        )).thenReturn(responseGenericResponse);
+
+        GenericResponse<CardStatusResponse> response = mockService.validateCardStatus(
+                "UNIT1", "CHANNEL1", "en", "SERVICE1", "SCREEN1", "MODULE1", "SUBMODULE1",
+                request, deviceInfo);
+
+
+        assertNotNull(response.getStatus());
+        assertEquals("000000", response.getStatus().getCode());
+        assertEquals("SUCCESS", response.getStatus().getDescription());
+        assertNotNull(response.getData());
+        assertTrue(response.getData().isCardValid());
+        assertEquals("Active", response.getData().getActivationFlag());
+    }
+
+    @Test
     void testValidateCardStatus_FailedResponse() throws IOException {
 
         CardStatusValidationRequest request = new CardStatusValidationRequest();
@@ -125,5 +158,54 @@ class MockCardStatusServiceImplTest {
 
         assertTrue(new ClassPathResource("JSON/card-status-failed.json").exists(),
                 "Missing failed.json in resources!");
+    }
+
+    @Test
+    void testValidateCardStatus_returnIoException() throws IOException {
+
+        CardStatusValidationRequest request = new CardStatusValidationRequest();
+
+        request.setCardNumber("4203741234567889");
+        DeviceInfo deviceInfo = new DeviceInfo();
+
+
+
+        when(objectMapper.readValue(
+                (InputStream) any(InputStream.class),
+                ArgumentMatchers.<TypeReference<GenericResponse<CardStatusResponse>>>any()
+        )).thenThrow(new IOException("IO Exception"));
+
+        GenericResponse<CardStatusResponse> response = mockService.validateCardStatus(
+                "UNIT1", "CHANNEL1", "en", "SERVICE1", "SCREEN1", "MODULE1", "SUBMODULE1",
+                request, deviceInfo);
+
+        assertEquals(AppConstant.GEN_ERROR_CODE, response.getStatus().getCode());
+        assertEquals(AppConstant.GEN_ERROR_DESC, response.getStatus().getDescription());
+        assertNull( response.getData());
+
+    }
+
+    @Test
+    void testValidateCardStatus_returnException() throws IOException {
+
+        CardStatusValidationRequest request = new CardStatusValidationRequest();
+
+        request.setCardNumber("4203741234567889");
+        DeviceInfo deviceInfo = new DeviceInfo();
+
+
+        when(objectMapper.readValue(
+                (InputStream) any(InputStream.class),
+                ArgumentMatchers.<TypeReference<GenericResponse<CardStatusResponse>>>any()
+        )).thenThrow(new RuntimeException("Database Error"));
+
+        GenericResponse<CardStatusResponse> response = mockService.validateCardStatus(
+                "UNIT1", "CHANNEL1", "en", "SERVICE1", "SCREEN1", "MODULE1", "SUBMODULE1",
+                request, deviceInfo);
+
+        assertEquals(AppConstant.GEN_ERROR_CODE, response.getStatus().getCode());
+        assertEquals(AppConstant.GEN_ERROR_DESC, response.getStatus().getDescription());
+        assertNull( response.getData());
+
     }
 }

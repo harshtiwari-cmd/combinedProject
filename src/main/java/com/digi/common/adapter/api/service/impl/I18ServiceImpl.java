@@ -22,7 +22,7 @@ import java.util.Objects;
 @Slf4j
 public class I18ServiceImpl implements I18Service {
 
-   @Autowired
+    @Autowired
     private I18Repository i18Repo;
 
     @Autowired
