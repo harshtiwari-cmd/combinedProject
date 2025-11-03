@@ -1,0 +1,10 @@
+{
+  "data": {
+    "cardValid": true,
+    "activationFlag": "Active"
+  },
+  "status": {
+    "code": "000000",
+    "description": "SUCCESS"
+  }
+}
