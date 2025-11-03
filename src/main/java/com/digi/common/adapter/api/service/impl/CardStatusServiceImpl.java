@@ -14,11 +14,13 @@ import com.digi.common.infrastructure.persistance.CardBinMaster;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 
 @Service
+@ConditionalOnProperty(name = "mock.enabled", havingValue = "false")
 public class CardStatusServiceImpl implements CardStatusService {
 
 	private static final Logger logger = LoggerFactory.getLogger(CardStatusServiceImpl.class);

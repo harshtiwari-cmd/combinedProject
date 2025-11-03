@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.digi</groupId>
-	<artifactId>common-service-v2</artifactId>
+	<artifactId>combined</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>common-service-v2</name>
+	<name>combined</name>
 	<description>Demo project for Spring Boot</description>
 	<url/>
 	<licenses>
