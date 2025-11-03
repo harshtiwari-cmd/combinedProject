@@ -2,10 +2,14 @@ package com.digi.common.adapter.api.controller;
 
 
 import com.digi.common.adapter.api.service.CardBinValidationService;
+import com.digi.common.adapter.api.service.CardStatusService;
 import com.digi.common.constants.AppConstants;
 import com.digi.common.domain.model.dto.*;
 import com.digi.common.infrastructure.common.AppConstant;
 import com.digi.common.infrastructure.common.GenericResponse;
+import com.digi.common.domain.model.dto.CardStatusValidateWrapper;
+import com.digi.common.domain.model.dto.CardStatusValidationRequest;
+import com.digi.common.domain.model.dto.CardStatusResponse;
 import com.digi.common.infrastructure.persistance.CardBinMaster;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
@@ -29,6 +33,8 @@ public class CardBinValidationController {
     private static final Logger logger = LoggerFactory.getLogger(CardBinValidationController.class);
     @Autowired
     private CardBinValidationService cardBinValidationService;
+    @Autowired
+    private CardStatusService cardStatusService;
     @Value("${mock.enabled}")
     private boolean isTrue;
 
@@ -78,6 +84,34 @@ public class CardBinValidationController {
             logger.error("Error occurred during CardBin validation and PIN encryption - Unit: {}, Channel: {}, ServiceId: {}, Error: {}",
                     unit, channel, serviceId, e.getMessage(), e);
             return ResponseEntity.ok(GenericResponse.error(AppConstant.VALIDATION_FAILURE_CODE, AppConstant.VALIDATION_FAILURE_DESC));
+        }
+    }
+
+    @PostMapping("/api/v1/card-validate")
+    public ResponseEntity<GenericResponse<CardStatusResponse>> validateCardStatus(
+            @RequestHeader(name = AppConstant.HEADER_UNIT, required = true) String unit,
+            @RequestHeader(name = AppConstant.HEADER_CHANNEL, required = true) String channel,
+            @RequestHeader(name = AppConstant.HEADER_ACCEPT_LANGUAGE, required = false) String lang,
+            @RequestHeader(name = AppConstant.SERVICEID, required = true) String serviceId,
+            @RequestHeader(name = AppConstant.SCREEN_ID, required = true) String screenId,
+            @RequestHeader(name = AppConstant.MODULE_ID, required = true) String moduleId,
+            @RequestHeader(name = AppConstant.SUB_MODULE_ID, required = true) String subModuleId,
+            @Valid @RequestBody CardStatusValidateWrapper wrapper) {
+
+        CardStatusValidationRequest request = wrapper.getRequestInfo();
+        DeviceInfo deviceRequest = wrapper.getDeviceInfo();
+        logger.info("Card status validation request received - Unit: {}, Channel: {}, ServiceId: {}, CardNumber: {}",
+                unit, channel, serviceId, maskCardNumber(request.getCardNumber()));
+
+        try {
+            GenericResponse<CardStatusResponse> response = cardStatusService.validateCardStatus(
+                    unit, channel, lang, serviceId, screenId, moduleId, subModuleId, request, deviceRequest);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error in card status validation - Unit: {}, Channel: {}, ServiceId: {}, Error: {}",
+                    unit, channel, serviceId, e.getMessage(), e);
+            return ResponseEntity.ok(GenericResponse.error(AppConstant.GEN_ERROR_CODE, AppConstant.GEN_ERROR_DESC));
         }
     }
     
