@@ -141,6 +141,8 @@ public class AppConstant {
     public static final String BLOCKED = "BLOCKED";
     public static final String INVALID = "INACTIVE";
     public static final String OTP_FORGET = "forget";
+    public static final String MIDDLEWARE_SUCCESS_CODE = "0000";
+
     public static final String MWRESULT_CODE = "0";
 
     public static final String SOAP_RESULT_CODE = "0";
