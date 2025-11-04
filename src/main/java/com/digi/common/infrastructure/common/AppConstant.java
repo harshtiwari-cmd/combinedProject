@@ -7,7 +7,11 @@ public class AppConstant {
     public static final String MODULE_ID = "moduleId";
     public static final String SUB_MODULE_ID = "subModuleId";
     public static final String BRANCH_CODE = "branchCode";
+    public static final String ACTIVE = "ACTIVE";
+    public static final String DEBIT = "DEBIT";
+    public static final String PREPAID = "PREPAID";
     public static final String CUSTOMER_NO = "customerNumber";
+    public static final String CARDBINVALIDATION = "CardBinValidation";
     public static final String STATUS_ACT = "ACT";
     public static final String OPEN_IN_EN = "OPEN";
     public static final String OPEN_IN_AR = "مفتوح";

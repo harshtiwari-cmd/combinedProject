@@ -4,10 +4,10 @@ package com.digi.common.adapter.api.service.impl;
 import com.digi.common.adapter.api.service.BankMiddlewareService;
 import com.digi.common.adapter.api.service.CardBinValidationService;
 import com.digi.common.adapter.api.service.OtpService;
+import com.digi.common.adapter.api.service.UserServiceClient;
 import com.digi.common.domain.model.dto.*;
 import com.digi.common.domain.repository.CardBinMasterRepository;
 import com.digi.common.domain.repository.CardValidationRepository;
-import com.digi.common.domain.repository.CustomerRepository;
 import com.digi.common.domain.repository.OtpDetailsRepository;
 import com.digi.common.exception.*;
 import com.digi.common.infrastructure.common.AppConstant;
@@ -35,8 +35,7 @@ public class CardBinValidationServiceImpl implements CardBinValidationService {
 
     @Autowired
     private CardBinMasterRepository cardBinMasterRepository;
-    @Autowired
-    private CustomerRepository customerRepository;
+    
     @Autowired
     private HSMEncryptorManagerImpl hsmEncryptor;
     @Autowired
@@ -51,6 +50,8 @@ public class CardBinValidationServiceImpl implements CardBinValidationService {
     private CardValidationRepository cardValidationRepository;
     @Autowired
     private OtpDetailsRepository otpDetailsRepository;
+    @Autowired
+    private UserServiceClient userServiceClient;
 
     @Override
     public GenericResponse<SimpleValidationResponse> validateCardBin(String unit, String channel, String lang, String serviceId, String screenId, String moduleId, String subModuleId, CardBinValidationRequest request, DeviceInfo deviceInfo) {
@@ -73,13 +74,13 @@ public class CardBinValidationServiceImpl implements CardBinValidationService {
                 return GenericResponse.error(AppConstant.ERROR_DATA_CODE, AppConstant.BIN_VALIDATE_DATA_MSG);
             }
 
-            if (!"ACTIVE".equalsIgnoreCase(matchedBin.getStatus())) {
+            if (!AppConstant.ACTIVE.equalsIgnoreCase(matchedBin.getStatus())) {
                 logger.warn("Card validation failed - BIN record is not ACTIVE. BIN: {}, Status: {}", matchedBin.getBin(), matchedBin.getStatus());
                 handleFailedAttempt(cardNumber);
                 return GenericResponse.error(AppConstant.ERROR_DATA_CODE, AppConstant.BIN_VALIDATE_DATA_MSG);
             }
 
-            if (matchedBin.getCardType() != null && !"DEBIT".equalsIgnoreCase(matchedBin.getCardType()) && !"PREPAID".equalsIgnoreCase(matchedBin.getCardType())) {
+            if (matchedBin.getCardType() != null && !AppConstant.DEBIT.equalsIgnoreCase(matchedBin.getCardType()) && !AppConstant.PREPAID.equalsIgnoreCase(matchedBin.getCardType())) {
                 logger.warn("Card validation failed - Card type must be DEBIT. BIN: {}, CardType: {}", matchedBin.getBin(), matchedBin.getCardType());
                 handleFailedAttempt(cardNumber);
                 return GenericResponse.error(AppConstant.ERROR_DATA_CODE, AppConstant.BIN_VALIDATE_DATA_MSG);
@@ -90,7 +91,7 @@ public class CardBinValidationServiceImpl implements CardBinValidationService {
 
             String encryptedPin;
             try {
-                encryptedPin = hsmEncryptor.generatePinBlockUnderZPK(pin, cardNumber, "CardBinValidation");
+                encryptedPin = hsmEncryptor.generatePinBlockUnderZPK(pin, cardNumber, AppConstant.CARDBINVALIDATION);
                 logger.info("PIN encryption successful for card: {}", cardNumber);
             } catch (BarwaHSMCommuicationException | BARWAHSMEncryptionException | BARWAHSMParsingException e) {
                 logger.error("HSM encryption failed for card: {}, error: {}", cardNumber, e.getMessage(), e);
@@ -114,7 +115,7 @@ public class CardBinValidationServiceImpl implements CardBinValidationService {
 
                     String username;
                     try {
-                        username = getCustomerUsername(customerNumber);
+                        username = getCustomerUsername(unit, channel, lang, serviceId, screenId, moduleId, subModuleId, deviceInfo,customerNumber);
                     } catch (UserBlockedException ex) {
                         logger.warn("User is blocked for customerNumber: {}", customerNumber);
                         return GenericResponse.error(AppConstant.USER_BLOCKED, AppConstant.USER_BLOCKED_DATA_MSG);
@@ -242,42 +243,60 @@ public class CardBinValidationServiceImpl implements CardBinValidationService {
                 .build();
     }
 
-    private String getCustomerUsername(String customerNumber) {
+    private String getCustomerUsername(String unit, String channel, String lang, String serviceId,
+                                       String screenId, String moduleId, String subModuleId,
+                                       DeviceInfo deviceInfo,String customerNumber) {
         try {
-            logger.debug("Looking up customer username for customerNumber: {}", customerNumber);
-            Long customerId = Long.parseLong(customerNumber);
-            return customerRepository.findByCustomerId(customerId)
-                    .map(customer -> {
-                        String status = customer.getStatus();
-                        if (status != null && (
-                                AppConstant.LOCKED.equalsIgnoreCase(status) ||
-                                        AppConstant.BLOCKED.equalsIgnoreCase(status) ||
-                                        AppConstant.INVALID.equalsIgnoreCase(status))) {
-                            throw new UserBlockedException("User is blocked");
-                        }
-                        if (customer.getUpdatedAt() != null) {
-                            LocalDateTime updatedAt = customer.getUpdatedAt();
-                            LocalDateTime now = dateTimeProvider.getNow()
-                                    .map(temporal -> {
-                                        try {
-                                            return LocalDateTime.from(temporal);
-                                        } catch (Exception ex) {
-                                            return LocalDateTime.ofInstant(java.time.Instant.from(temporal), java.time.ZoneId.systemDefault());
-                                        }
-                                    })
-                                    .orElseGet(LocalDateTime::now);
-                            if (updatedAt.isAfter(now.minusHours(24))) {
-                                throw new RetryAfter24HoursException("Retry after 24 hours");
-                            }
-                        }
-                        return customer.getUserId();
-                    }).orElse(null);
-        } catch (NumberFormatException e) {
-            logger.error("Invalid customerNumber format: {}, must be a valid number", customerNumber);
-            return null;
+            UserServiceCustomerRequest customerRequest = UserServiceCustomerRequest.builder()
+                    .customerNumber(customerNumber)
+                    .build();
+
+            UserServiceRequest request = UserServiceRequest.builder()
+                    .requestInfo(customerRequest)
+                    .deviceInfo(deviceInfo)
+                    .build();
+
+            UserLookupResponse response = userServiceClient.getUserByCustomerNumber(
+                    unit, channel, lang, serviceId, screenId, moduleId, subModuleId, customerNumber, request);
+            if (response == null) {
+                return null;
+            }
+
+            String status = response.getStatus();
+            if (status != null && (
+                    AppConstant.LOCKED.equalsIgnoreCase(status) ||
+                            AppConstant.BLOCKED.equalsIgnoreCase(status) ||
+                            AppConstant.INVALID.equalsIgnoreCase(status))) {
+                throw new UserBlockedException("User is blocked");
+            }
+
+            if (response.getUpdatedAt() != null) {
+                LocalDateTime updatedAt;
+                try {
+                    updatedAt = LocalDateTime.parse(response.getUpdatedAt());
+                } catch (Exception pe) {
+                    updatedAt = null;
+                }
+                if (updatedAt != null) {
+                    LocalDateTime now = dateTimeProvider.getNow()
+                            .map(temporal -> {
+                                try {
+                                    return LocalDateTime.from(temporal);
+                                } catch (Exception ex) {
+                                    return LocalDateTime.ofInstant(java.time.Instant.from(temporal), java.time.ZoneId.systemDefault());
+                                }
+                            })
+                            .orElseGet(LocalDateTime::now);
+                    if (updatedAt.isAfter(now.minusHours(24))) {
+                        throw new RetryAfter24HoursException("Retry after 24 hours");
+                    }
+                }
+            }
+
+            return response.getUsername();
         } catch (Exception e) {
             logger.error("Error retrieving customer username for customerNumber: {}, error: {}", customerNumber, e.getMessage(), e);
-           throw e;
+            throw e;
         }
     }
     private boolean handleFailedAttempt(String cardNumber) {
