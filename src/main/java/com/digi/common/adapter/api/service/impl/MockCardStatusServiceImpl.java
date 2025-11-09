@@ -57,7 +57,6 @@ public class MockCardStatusServiceImpl implements CardStatusService {
                     new TypeReference<>() {
                     }
             );
-            log.info("Mock {} ", mockResponse);
 
             log.info("[MOCK] Mock response loaded successfully for cardNumber={}", cardNumber);
             return mockResponse;

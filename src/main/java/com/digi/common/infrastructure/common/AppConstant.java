@@ -11,6 +11,11 @@ public class AppConstant {
     public static final String DEBIT = "DEBIT";
     public static final String PREPAID = "PREPAID";
     public static final String CUSTOMER_NO = "customerNumber";
+    public static final String CARD_NO = "cardNumber";
+    public static final String NEW_PIN = "newPinBlock";
+    public static final String PIN_CREATION_SERVICE = "PCS.NEW.PIN.CREATION";
+    public static final String CARD_ACTIVATION_SERVICE = "PCS.CARD.ACTIVATION";
+    public static final String MIDDLEWARE_FAILURE_CODE = "0004";
     public static final String CARDBINVALIDATION = "CardBinValidation";
     public static final String STATUS_ACT = "ACT";
     public static final String OPEN_IN_EN = "OPEN";
