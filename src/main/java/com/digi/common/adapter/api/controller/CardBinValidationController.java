@@ -2,6 +2,7 @@ package com.digi.common.adapter.api.controller;
 
 
 import com.digi.common.adapter.api.service.CardBinValidationService;
+import com.digi.common.adapter.api.service.ActivateCardService;
 import com.digi.common.adapter.api.service.CardStatusService;
 import com.digi.common.constants.AppConstants;
 import com.digi.common.domain.model.dto.*;
@@ -12,6 +13,7 @@ import com.digi.common.domain.model.dto.CardStatusValidationRequest;
 import com.digi.common.domain.model.dto.CardStatusResponse;
 import com.digi.common.infrastructure.persistance.CardBinMaster;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,18 +27,22 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Collections;
 import java.util.List;
 
+@Slf4j
 @RestController
 @Validated
 public class CardBinValidationController {
-    
-    private static final Logger logger = LoggerFactory.getLogger(CardBinValidationController.class);
+
     @Autowired
     private CardBinValidationService cardBinValidationService;
+
     @Autowired
     private CardStatusService cardStatusService;
+
+    @Autowired
+    private ActivateCardService activateCardService;
+
     @Value("${mock.enabled}")
     private boolean isTrue;
-
 
     @PostMapping("/validate")
     public ResponseEntity<GenericResponse<SimpleValidationResponse>> validateCardBin(
@@ -51,7 +57,7 @@ public class CardBinValidationController {
 
            CardBinValidationRequest request = wrapper.getRequestInfo();
            DeviceInfo deviceRequest = wrapper.getDeviceInfo();
-           logger.info("CardBin validation and PIN encryption request received - Unit: {}, Channel: {}, ServiceId: {}, CardNumber: {}",
+           log.info("CardBin validation and PIN encryption request received - Unit: {}, Channel: {}, ServiceId: {}, CardNumber: {}",
                 unit, channel, serviceId, maskCardNumber(request.getCardNumber()));
 
         try {
@@ -63,24 +69,24 @@ public class CardBinValidationController {
             }
 
             if (response == null || response.getStatus() == null) {
-                logger.warn("Service returned null response or status");
+                log.warn("Service returned null response or status");
                 return ResponseEntity.ok(GenericResponse.error(AppConstant.VALIDATION_FAILURE_CODE, AppConstant.VALIDATION_FAILURE_DESC));
             }
 
             if (AppConstant.RESULT_CODE.equals(response.getStatus().getCode())) {
                 SimpleValidationResponse data = response.getData();
                 if (data == null || (data.getCustomerId() == null && data.getUserName() == null && !data.isOtpStatus())) {
-                    logger.warn("Success response but invalid data structure");
+                    log.warn("Success response but invalid data structure");
                     return ResponseEntity.ok(GenericResponse.error(AppConstant.VALIDATION_FAILURE_CODE, AppConstant.VALIDATION_FAILURE_DESC));
                 }
                 return ResponseEntity.ok(GenericResponse.success(data));
             }
 
-            logger.warn("Service returned error response - Code: {}, Description: {}",
+            log.warn("Service returned error response - Code: {}, Description: {}",
                     response.getStatus().getCode(), response.getStatus().getDescription());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.error("Error occurred during CardBin validation and PIN encryption - Unit: {}, Channel: {}, ServiceId: {}, Error: {}",
+            log.error("Error occurred during CardBin validation and PIN encryption - Unit: {}, Channel: {}, ServiceId: {}, Error: {}",
                     unit, channel, serviceId, e.getMessage(), e);
             return ResponseEntity.ok(GenericResponse.error(AppConstant.VALIDATION_FAILURE_CODE, AppConstant.VALIDATION_FAILURE_DESC));
         }
@@ -99,7 +105,7 @@ public class CardBinValidationController {
 
         CardStatusValidationRequest request = wrapper.getRequestInfo();
         DeviceInfo deviceRequest = wrapper.getDeviceInfo();
-        logger.info("Card status validation request received - Unit: {}, Channel: {}, ServiceId: {}, CardNumber: {}",
+        log.info("Card status validation request received - Unit: {}, Channel: {}, ServiceId: {}, CardNumber: {}",
                 unit, channel, serviceId, maskCardNumber(request.getCardNumber()));
 
         try {
@@ -108,12 +114,43 @@ public class CardBinValidationController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            logger.error("Error in card status validation - Unit: {}, Channel: {}, ServiceId: {}, Error: {}",
+            log.error("Error in card status validation - Unit: {}, Channel: {}, ServiceId: {}, Error: {}",
                     unit, channel, serviceId, e.getMessage(), e);
             return ResponseEntity.ok(GenericResponse.error(AppConstant.GEN_ERROR_CODE, AppConstant.GEN_ERROR_DESC));
         }
     }
-    
+
+    @PostMapping("/api/v1/activate-card")
+    public ResponseEntity<GenericResponse<ActivateCardResponse>> createNewPin(
+            @RequestHeader(name = AppConstant.HEADER_UNIT, required = true) String unit,
+            @RequestHeader(name = AppConstant.HEADER_CHANNEL, required = true) String channel,
+            @RequestHeader(name = AppConstant.HEADER_ACCEPT_LANGUAGE, required = false) String lang,
+            @RequestHeader(name = AppConstant.SERVICEID, required = true) String serviceId,
+            @RequestHeader(name = AppConstant.SCREEN_ID, required = true) String screenId,
+            @RequestHeader(name = AppConstant.MODULE_ID, required = true) String moduleId,
+            @RequestHeader(name = AppConstant.SUB_MODULE_ID, required = true) String subModuleId,
+            @Valid @RequestBody ActivateCardValidateWrapper wrapper) {
+
+        ActivateCardRequest request = wrapper.getRequestInfo();
+        DeviceInfo deviceInfo = wrapper.getDeviceInfo();
+
+        log.info("Received activate-card request with headers - unit: {}, channel: {}, serviceId: {}, cardNumber: {}",
+                unit, channel, serviceId, maskCardNumber(request.getCardNumber()));
+
+        try {
+            log.debug("Calling activateCardService.createNewPin with request: {}", request);
+            GenericResponse<ActivateCardResponse> cardedPinChange = activateCardService.createNewPin(
+                    unit, channel, lang, serviceId, screenId, moduleId, subModuleId, request, deviceInfo);
+
+            log.info("Received response from activateCardService: {}", cardedPinChange);
+            return ResponseEntity.ok(cardedPinChange);
+        } catch (Exception e) {
+            log.error("Exception in createNewPin - unit: {}, channel: {}, serviceId: {}, error: {}", unit, channel, serviceId, e.getMessage(), e);
+            return ResponseEntity.ok(GenericResponse.error(AppConstant.GEN_ERROR_CODE, AppConstant.GEN_ERROR_DESC));
+        }
+    }
+
+
     @PostMapping("/bin-details")
     public GenericResponse<List<CardBinMaster>> getActiveBins(
             @RequestHeader(name = AppConstant.SERVICEID, required = true) String serviceId,
@@ -125,32 +162,32 @@ public class CardBinValidationController {
             @Valid @RequestBody(required = true) CardBinAllWrapper wrapper) {
         
         if (wrapper == null) {
-            logger.error("Request body is null - ServiceId: {}, ModuleId: {}", serviceId, moduleId);
+            log.error("Request body is null - ServiceId: {}, ModuleId: {}", serviceId, moduleId);
             return GenericResponse.error(AppConstant.GEN_ERROR_CODE, "Request body is required");
         }
         
         if (wrapper.getDeviceInfo() == null) {
-            logger.error("Device information is null - ServiceId: {}, ModuleId: {}", serviceId, moduleId);
+            log.error("Device information is null - ServiceId: {}, ModuleId: {}", serviceId, moduleId);
             return GenericResponse.error(AppConstant.GEN_ERROR_CODE, "Device information is required");
         }
         
-        logger.info("Request received to fetch active CardBin records - ServiceId: {}, ModuleId: {}, SubModuleId: {}, ScreenId: {}, Channel: {}, DeviceId: {}", 
+        log.info("Request received to fetch active CardBin records - ServiceId: {}, ModuleId: {}, SubModuleId: {}, ScreenId: {}, Channel: {}, DeviceId: {}",
                 serviceId, moduleId, subModuleId, screenId, channel, wrapper.getDeviceInfo().getDeviceId());
         try {
             GenericResponse<List<CardBinMaster>> response = cardBinValidationService.getActiveBins();
             if (response == null || response.getStatus() == null || !AppConstant.RESULT_CODE.equals(response.getStatus().getCode())) {
-                logger.error("Service returned error response for getActiveBins");
+                log.error("Service returned error response for getActiveBins");
                 return GenericResponse.error(AppConstant.VALIDATION_FAILURE_CODE, AppConstant.VALIDATION_FAILURE_DESC);
             }
             
             if (response.getData() == null || response.getData().isEmpty()) {
-                logger.info("No active CardBin records found");
+                log.info("No active CardBin records found");
                 return GenericResponse.successNoData(Collections.emptyList());
             }
-            logger.info("Fetched active CardBin records - count: {}", response.getData().size());
+            log.info("Fetched active CardBin records - count: {}", response.getData().size());
             return GenericResponse.success(response.getData());
         } catch (Exception e) {
-            logger.error("Error occurred while fetching active CardBin records: {}", e.getMessage(), e);
+            log.error("Error occurred while fetching active CardBin records: {}", e.getMessage(), e);
             return GenericResponse.error(AppConstant.VALIDATION_FAILURE_CODE, AppConstant.VALIDATION_FAILURE_DESC);
         }
     }

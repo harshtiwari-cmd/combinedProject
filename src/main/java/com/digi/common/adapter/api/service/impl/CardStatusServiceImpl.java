@@ -78,7 +78,7 @@ public class CardStatusServiceImpl implements CardStatusService {
 			if (AppConstant.MIDDLEWARE_SUCCESS_CODE.equals(returnCode)) {
 				CardStatusResponse data = CardStatusResponse.builder()
 						.cardValid(true)
-						.activationFlag("Active")
+						.activationFlag("Active card")
 						.build();
 				return GenericResponse.success(data);
 			}
