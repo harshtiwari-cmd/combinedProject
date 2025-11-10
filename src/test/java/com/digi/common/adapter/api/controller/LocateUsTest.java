@@ -4,6 +4,8 @@ import com.digi.common.domain.model.dto.CardBinAllWrapper;
 import com.digi.common.domain.model.dto.CoordinatesDTO;
 import com.digi.common.domain.model.dto.DeviceInfo;
 import com.digi.common.domain.model.dto.LocateUsDTO;
+import com.digi.common.dto.GenericResponse;
+import com.digi.common.infrastructure.common.AppConstant;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -14,19 +16,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 
+import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class LocateUsControllerMockitoTest {
+class LocateUsTest {
 
     @Mock
     private LocateUsService locateUsService;
@@ -120,7 +122,6 @@ class LocateUsControllerMockitoTest {
         data.put("kiosks", Collections.emptyList());
 
         when(locateUsService.fetchAllTypesAsync("en")).thenReturn(CompletableFuture.completedFuture(data));
-        when(locateUsService.getImageForType("BRANCH")).thenReturn("branch_image_url");
 
         ResponseEntity<?> response = locateUsController.getService(
                 "PRD", "MB", "en", "LOGIN", "SC_01", "MI_01", "SMI_01", cardBinAllWrapper);
@@ -129,7 +130,7 @@ class LocateUsControllerMockitoTest {
         verify(locateUsService, times(1)).fetchAllTypesAsync("en");
     }
 
-    @Disabled
+    @Test
     void getLocateUs_Success_WhenOnlyAtmsExist() throws Exception {
         Map<String, List<LocateUsDTO>> data = new HashMap<>();
         data.put("branches", Collections.emptyList());
@@ -137,7 +138,6 @@ class LocateUsControllerMockitoTest {
         data.put("kiosks", Collections.emptyList());
 
         when(locateUsService.fetchAllTypesAsync("en")).thenReturn(CompletableFuture.completedFuture(data));
-        when(locateUsService.getImageForType("ATM")).thenReturn("atm_image_url");
 
         ResponseEntity<?> response = locateUsController.getService(
                 "PRD", "MB", "en", "LOGIN", "SC_01", "MI_01", "SMI_01", cardBinAllWrapper);
@@ -146,7 +146,7 @@ class LocateUsControllerMockitoTest {
         verify(locateUsService, times(1)).fetchAllTypesAsync("en");
     }
 
-    @Disabled
+    @Test
     void getLocateUs_Success_WhenOnlyKiosksExist() throws Exception {
         Map<String, List<LocateUsDTO>> data = new HashMap<>();
         data.put("branches", Collections.emptyList());
@@ -154,7 +154,6 @@ class LocateUsControllerMockitoTest {
         data.put("kiosks", List.of(kioskDto));
 
         when(locateUsService.fetchAllTypesAsync("en")).thenReturn(CompletableFuture.completedFuture(data));
-        when(locateUsService.getImageForType("KIOSK")).thenReturn("kiosk_image_url");
 
         ResponseEntity<?> response = locateUsController.getService(
                 "PRD", "MB", "en", "LOGIN", "SC_01", "MI_01", "SMI_01", cardBinAllWrapper);
@@ -179,17 +178,46 @@ class LocateUsControllerMockitoTest {
         verify(locateUsService, times(1)).fetchAllTypesAsync("en");
     }
 
-    @Disabled
-    void getLocateUs_ServiceThrowsException_ReturnsInternalServerError() {
-        when(locateUsService.fetchAllTypesAsync("en"))
-                .thenThrow(new RuntimeException("Database Error"));
+    @Test
+    void getLocateUs_ServiceThrowsException_ReturnsInternalServerError() throws Exception {
 
-        ResponseEntity<?> response = locateUsController.getService(
+        CompletableFuture<Map<String, List<LocateUsDTO>>> future = mock(CompletableFuture.class);
+
+        when(locateUsService.fetchAllTypesAsync("en")).thenReturn(future);
+
+        when(future.get()).thenThrow(new ExecutionException(new RuntimeException("Database Error")));
+
+        ResponseEntity<GenericResponse<List<Map<String, List<Object>>>>> locateUsControllerService = locateUsController.getService(
                 "PRD", "MB", "en", "LOGIN", "SC_01", "MI_01", "SMI_01", cardBinAllWrapper);
 
-        assertEquals(500, response.getStatusCodeValue());
+        GenericResponse<List<Map<String, List<Object>>>> serviceBody = locateUsControllerService.getBody();
+
+        assertEquals(AppConstant.VALIDATION_FAILURE_CODE, serviceBody.getStatus().getCode());
+        assertEquals(AppConstant.VALIDATION_FAILURE_DESC, serviceBody.getStatus().getDescription());
+        assertNull(serviceBody.getData());
         verify(locateUsService, times(1)).fetchAllTypesAsync("en");
     }
+
+    @Test
+    void getLocateUs_ServiceThrowInterruptedException() throws Exception {
+        CompletableFuture<Map<String, List<LocateUsDTO>>> future = mock(CompletableFuture.class);
+
+        when(locateUsService.fetchAllTypesAsync(anyString())).thenReturn(future);
+
+        when(future.get()).thenThrow(new InterruptedException("Thread Interrupted"));
+
+        ResponseEntity<GenericResponse<List<Map<String, List<Object>>>>> response = locateUsController.getService(
+                "PRD", "MB", "en", "LOGIN", "SC_01", "MI_01", "SMI_01", cardBinAllWrapper);
+
+        GenericResponse<List<Map<String, List<Object>>>> body = response.getBody();
+
+        assertEquals(AppConstant.VALIDATION_FAILURE_CODE, body.getStatus().getCode());
+        assertEquals(AppConstant.VALIDATION_FAILURE_DESC, body.getStatus().getDescription());
+        assertNull(body.getData());
+
+        verify(locateUsService, times(1)).fetchAllTypesAsync(anyString());
+    }
+
 
     @Test
     void getLocateUs_ShouldReturnError_WhenLangNotSupported() {
